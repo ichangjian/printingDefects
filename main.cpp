@@ -1,11 +1,16 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "locMark.hpp"
+#include "splitID.h"
 using namespace std;
 using namespace cv;
 void mark();
+void tmm();
+void split();
 int main()
 {
+    split();
+    tmm();
     mark();
     return 1;
     Mat image = imread("a.jpg", 0);
@@ -69,6 +74,36 @@ int main()
     return 0;
 }
 
+void split()
+{
+    Mat image=imread("idcard-s.png",0);
+    
+    SplitID spid(1);
+    // spid.setImage((image(Rect(2,2,image.cols-4,image.rows-4))>250)*255);
+    spid.setImage((image(Rect(2,2,image.cols-4,image.rows-4))));
+    spid.getWordRegions();
+    return;
+}
+void tmm()
+{
+    Mat idcard=imread("idcard.png",0);
+    Mat name=imread("idcard-name.png",0);
+    Mat out;
+    matchTemplate(idcard,name,out,TM_CCOEFF_NORMED);
+
+
+    double a,b;
+    cv::Point p1,p2;
+    
+    cv::minMaxLoc(out,&a,&b,&p1,&p2);
+    circle(out,p1,5,Scalar(122.0/255),-1);
+    circle(out,p2,5,Scalar(122.0/255),-1);
+    cout<<p1<<"\t"<<p2<<"\n";
+
+    imshow("out",out);
+    imwrite("tmm.png",out*255);
+    waitKey();
+}
 void mark()
 {
     Mat image1 = imread("20190612181530.jpg", 0);
