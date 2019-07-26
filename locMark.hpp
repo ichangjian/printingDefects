@@ -162,16 +162,26 @@ int LocMark::getMarkPosition(const cv::Mat& img, std::vector<cv::Point2f> &posit
 	std::vector<cv::Point2f> centerWH;
 	for (size_t i = 0; i < contours.size(); i++)
 	{
-#ifdef DEBUG_MARK
-		char c[10];
-		sprintf(c, "%d", i);
-		putText(bw, c, contours[i][0], 1, 2, cv::Scalar(125));
-#endif // DEBUG_MARK
+
 
 		cv::RotatedRect rotRect = cv::minAreaRect(contours[i]);
 		cv::Point2f corners[4];
 		rotRect.points(corners);
-
+		//rectangle too small
+		if (rotRect.boundingRect().width < 100 || rotRect.boundingRect().height < 100 ||rotRect.boundingRect().width > 300 || rotRect.boundingRect().height > 300)
+		{
+			continue;
+		}
+		//rectangle too far with square
+		if (abs(rotRect.boundingRect().height - rotRect.boundingRect().width) > 50)
+		{
+			continue;
+		}
+		#ifdef DEBUG_MARK
+		char c[10];
+		sprintf(c, "%d", i);
+		putText(bw, c, contours[i][0], 1, 2, cv::Scalar(125));
+#endif // DEBUG_MARK
 		//abandon rectangle center in image border
 		if (rotRect.center.x<m_imgBorderSize ||
 			rotRect.center.x>img.cols - m_imgBorderSize ||
@@ -180,7 +190,7 @@ int LocMark::getMarkPosition(const cv::Mat& img, std::vector<cv::Point2f> &posit
 		{
 			continue;
 		}
-
+/*
 		//get the width/height of rectangle
 		int width = 0;
 		int height = 0;
@@ -209,7 +219,7 @@ int LocMark::getMarkPosition(const cv::Mat& img, std::vector<cv::Point2f> &posit
 #endif // DEBUG_MARK
 
 		//rectangle too small
-		if (height < 5 || width < 5)
+		if (height < 100 || width < 100)
 		{
 			continue;
 		}
@@ -218,8 +228,9 @@ int LocMark::getMarkPosition(const cv::Mat& img, std::vector<cv::Point2f> &posit
 		{
 			continue;
 		}
+		*/
 		centers.push_back(rotRect.center);
-		centerWH.push_back(cv::Point2f(width, height));
+		centerWH.push_back(cv::Point2f(rotRect.boundingRect().width, rotRect.boundingRect().height));
 		centerIndex.push_back(i);
 
 	}
@@ -296,7 +307,7 @@ int LocMark::getMarkPosition(const cv::Mat& img, std::vector<cv::Point2f> &posit
 
 		{
 			//the shape is close
-			if (abs(centerWH[i].x + centerWH[i].y - centerWH[minj].x - centerWH[minj].y) < 10)
+			if (abs(centerWH[i].x + centerWH[i].y - centerWH[minj].x - centerWH[minj].y) < 100)
 			{
 				markCenter.push_back((centers[i] + centers[minj]) / 2);
 

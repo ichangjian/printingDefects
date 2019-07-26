@@ -7,10 +7,12 @@ using namespace cv;
 void mark();
 void tmm();
 void split();
+void blackDot();
 int main()
 {
-    split();
-    tmm();
+    blackDot();
+    // split();
+    // tmm();
     mark();
     return 1;
     Mat image = imread("a.jpg", 0);
@@ -76,45 +78,44 @@ int main()
 
 void split()
 {
-    Mat image=imread("idcard-s.png",0);
-    
+    Mat image = imread("idcard-s.png", 0);
+
     SplitID spid(1);
     // spid.setImage((image(Rect(2,2,image.cols-4,image.rows-4))>250)*255);
-    spid.setImage((image(Rect(2,2,image.cols-4,image.rows-4))));
+    spid.setImage((image(Rect(2, 2, image.cols - 4, image.rows - 4))));
     spid.getWordRegions();
     return;
 }
 void tmm()
 {
-    Mat idcard=imread("idcard.png",0);
-    Mat name=imread("idcard-name.png",0);
+    Mat idcard = imread("idcard.png", 0);
+    Mat name = imread("idcard-name.png", 0);
     Mat out;
-    matchTemplate(idcard,name,out,TM_CCOEFF_NORMED);
+    matchTemplate(idcard, name, out, TM_CCOEFF_NORMED);
 
+    double a, b;
+    cv::Point p1, p2;
 
-    double a,b;
-    cv::Point p1,p2;
-    
-    cv::minMaxLoc(out,&a,&b,&p1,&p2);
-    circle(out,p1,5,Scalar(122.0/255),-1);
-    circle(out,p2,5,Scalar(122.0/255),-1);
-    cout<<p1<<"\t"<<p2<<"\n";
+    cv::minMaxLoc(out, &a, &b, &p1, &p2);
+    circle(out, p1, 5, Scalar(122.0 / 255), -1);
+    circle(out, p2, 5, Scalar(122.0 / 255), -1);
+    cout << p1 << "\t" << p2 << "\n";
 
-    imshow("out",out);
-    imwrite("tmm.png",out*255);
+    imshow("out", out);
+    imwrite("tmm.png", out * 255);
     waitKey();
 }
 void mark()
 {
-    Mat image1 = imread("20190612181530.jpg", 0);
-    Mat image2 = imread("2.png", 0);
-    Size imageSize=image1.size();
-    
+    Mat image1 = imread("bei.jpg", 0);
+    Mat image2 = imread("bei-big.png", 0);
+    Size imageSize = image1.size();
+
     // Mat cameraMatrix=(Mat_<double>(3,3)<<3.2606318303148678e+03, 0., 1.9902589726153024e+03, 0.,3.2544394559854172e+03, 1.4792963284506968e+03, 0., 0., 1.);
     // Mat distCoeffs=(Mat_<double>(5,1)<<3.3748983542710012e-02, -8.1017183509675891e-02,-3.3142558829948004e-03, -1.5452809687960208e-03, 0.);
-    Mat cameraMatrix=(Mat_<double>(3,3)<<3.2439474859364700e+03, 0., 2.0088010945219005e+03, 0.,3.2379690414176052e+03, 1.4863769408813732e+03, 0., 0., 1.);
-    Mat distCoeffs=(Mat_<double>(5,1)<<1.3950461445044790e-01, -8.5094151077102653e-01,-2.6431370928322010e-03, 8.7808751132873724e-05,1.5867377592585166e+00);
-    
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 3.2439474859364700e+03, 0., 2.0088010945219005e+03, 0., 3.2379690414176052e+03, 1.4863769408813732e+03, 0., 0., 1.);
+    Mat distCoeffs = (Mat_<double>(5, 1) << 1.3950461445044790e-01, -8.5094151077102653e-01, -2.6431370928322010e-03, 8.7808751132873724e-05, 1.5867377592585166e+00);
+
     Mat view, rview, map1, map2;
     initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(),
                             getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0),
@@ -137,7 +138,6 @@ void mark()
     tp2.push_back(Point2f(0, image2.rows));
     // undistortPoints(pts1,pts1,cameraMatrix,distCoeffs,cv::noArray(), cameraMatrix);
 
-    
     for (size_t i = 0; i < 4; i++)
     {
         int mindist = 9999999;
@@ -175,6 +175,33 @@ void mark()
     // remap(image1, image1, map1, map2, INTER_LINEAR);
     // image1=imread("image1.jpg");
     Mat wp;
-    warpPerspective(image1, wp, H, image1.size());
+    warpPerspective(image1, wp, H, image2.size());
     imwrite("scen.png", wp);
+}
+
+void blackDot()
+{
+    Mat image=imread("b-1-1.png",0);
+    Mat gb;
+    GaussianBlur(image,gb,Size(21,21),2);
+    imwrite("bd-01.png",gb);
+    Mat sb=(gb-image)>10;
+    // Sobel(image,sb,image.depth(),1,1,11);
+    imwrite("bd-02.png",sb);
+
+    vector<vector<Point> >contours;
+    vector<Vec4i>hierarchy;
+    findContours(sb(Rect(20,20,sb.cols-40,sb.rows-40)), contours, hierarchy, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+    //绘制轮廓图
+    Mat rgb;
+    cvtColor(image(Rect(20,20,sb.cols-40,sb.rows-40)),rgb,CV_GRAY2BGR);
+    for (int i = 0; i < contours.size(); i++)
+    {
+        Scalar color = Scalar(rand() % 255, rand() % 255, rand() % 255);
+        drawContours(rgb, contours, i, color, CV_FILLED, 8);
+    }
+    imshow("轮廓图", rgb); 
+    waitKey();
+    return;
 }
